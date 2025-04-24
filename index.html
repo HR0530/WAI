@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ジャンプアクションゲーム</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            font-family: sans-serif;
+        }
+
+        #gameCanvas {
+            background-color: #f0f0f0;
+            display: block;
+        }
+
+        #startButton, #clearMessage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            padding: 1rem 2rem;
+            font-size: 1.5rem;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            display: none;
+        }
+
+        #startButton {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <button id="startButton">スタート</button>
+    <div id="clearMessage">クリア！</div>
+
+    <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const startButton = document.getElementById('startButton');
+    const clearMessage = document.getElementById('clearMessage');
+
+    const player = {
+      x: 50,
+      y: 300,
+      size: 50,
+      vy: 0,
+      isJumping: false
+    };
+
+    let obstacles = [];
+    let gameSpeed = 4;
+    let gameTime = 0;
+    let isRunning = false;
+    let startTime;
+    let lastSpeedChangeTime = 0;
+    let lastObstacleTime = 0;
+
+    function drawPlayer() {
+      ctx.fillStyle = 'blue';
+      ctx.fillRect(player.x, player.y, player.size, player.size);
+    }
+
+    function drawObstacles() {
+      ctx.fillStyle = 'red';
+      for (let obs of obstacles) {
+        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+      }
+    }
+
+    function updateObstacles() {
+      const now = Date.now();
+      obstacles.forEach(obs => obs.x -= gameSpeed);
+      obstacles = obstacles.filter(obs => obs.x + obs.width > 0);
+      if (now - lastObstacleTime > 500 + Math.random() * 1500) {
+        const height = 30 + Math.random() * 70;
+        obstacles.push({
+          x: canvas.width,
+          y: 400 - height,
+          width: 30,
+          height: height
+        });
+        lastObstacleTime = now;
+      }
+    }
+
+    function updatePlayer() {
+      if (player.isJumping) {
+        player.vy += 0.5;
+        player.y += player.vy;
+        if (player.y >= 300) {
+          player.y = 300;
+          player.vy = 0;
+          player.isJumping = false;
+        }
+      }
+    }
+
+    function checkCollision() {
+      for (let obs of obstacles) {
+        if (
+          player.x < obs.x + obs.width &&
+          player.x + player.size > obs.x &&
+          player.y < obs.y + obs.height &&
+          player.y + player.size > obs.y
+        ) {
+          endGame();
+        }
+      }
+    }
+
+    function changeSpeed() {
+      const now = (Date.now() - startTime) / 1000;
+      if (now - lastSpeedChangeTime >= 30) {
+        lastSpeedChangeTime = now;
+        const speeds = [4, 6, 8];
+        gameSpeed = speeds[Math.floor(Math.random() * speeds.length)];
+      }
+    }
+
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawPlayer();
+      drawObstacles();
+    }
+
+    function update() {
+      gameTime = (Date.now() - startTime) / 1000;
+      if (gameTime >= 180) return endGame(true);
+      changeSpeed();
+      updatePlayer();
+      updateObstacles();
+      checkCollision();
+    }
+
+    function gameLoop() {
+      if (!isRunning) return;
+      update();
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function startGame() {
+      isRunning = true;
+      obstacles = [];
+      player.y = 300;
+      player.vy = 0;
+      player.isJumping = false;
+      gameSpeed = 4;
+      startTime = Date.now();
+      lastSpeedChangeTime = 0;
+      lastObstacleTime = 0;
+      startButton.style.display = 'none';
+      clearMessage.style.display = 'none';
+      gameLoop();
+    }
+
+    function endGame(clear = false) {
+      isRunning = false;
+      if (clear) {
+        clearMessage.style.display = 'block';
+      } else {
+        alert('ゲームオーバー！');
+        startButton.style.display = 'block';
+      }
+    }
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === ' ' || e.key === 'ArrowUp') {
+        if (!player.isJumping) {
+          player.isJumping = true;
+          player.vy = -10;
+        }
+      }
+    });
+
+    startButton.addEventListener('click', () => {
+      startGame();
+    });
+    </script>
+</body>
+</html>
