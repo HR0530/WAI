@@ -86,7 +86,7 @@
     const player = {
       x: 50,
       y: 0,
-      size: 100, // プレイヤーのサイズを100に
+      size: 100,
       vy: 0,
       isJumping: false,
     };
@@ -131,8 +131,8 @@
 
       if (!updateObstacles.lastTime) updateObstacles.lastTime = now;
       if (now - updateObstacles.lastTime > nextObstacleDelay) {
-        const height = player.size * 0.3 + Math.random() * player.size * 0.5; // プレイヤーに合わせて調整
-        const width = player.size * 0.2 + Math.random() * player.size * 0.4; // 幅を小さく調整
+        const height = 30 + Math.random() * 50;
+        const width = 20 + Math.random() * 30; // 小さめの障害物に変更
         obstacles.push({
           x: canvas.width,
           y: canvas.height - height,
@@ -140,7 +140,7 @@
           height: height
         });
         updateObstacles.lastTime = now;
-        nextObstacleDelay = 800 + Math.random() * 1200;
+        nextObstacleDelay = 1200 + Math.random() * 1800; // 間隔広げた
       }
     }
 
@@ -259,7 +259,7 @@
       if (e.key === " " || e.key === "ArrowUp") {
         if (!player.isJumping) {
           player.isJumping = true;
-          player.vy = -player.size * 0.2; // ジャンプ高さを強化
+          player.vy = -11;
         }
       }
     });
@@ -267,7 +267,7 @@
     canvas.addEventListener("touchstart", () => {
       if (!player.isJumping) {
         player.isJumping = true;
-        player.vy = -player.size * 0.2; // ジャンプ高さを強化
+        player.vy = -11;
       }
     });
 
