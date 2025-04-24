@@ -132,7 +132,7 @@
       if (!updateObstacles.lastTime) updateObstacles.lastTime = now;
       if (now - updateObstacles.lastTime > nextObstacleDelay) {
         const height = player.size * 0.3 + Math.random() * player.size * 0.5; // プレイヤーに合わせて調整
-        const width = player.size * 0.3 + Math.random() * player.size * 0.5; // プレイヤーに合わせて調整
+        const width = player.size * 0.2 + Math.random() * player.size * 0.4; // 幅を小さく調整
         obstacles.push({
           x: canvas.width,
           y: canvas.height - height,
@@ -259,7 +259,7 @@
       if (e.key === " " || e.key === "ArrowUp") {
         if (!player.isJumping) {
           player.isJumping = true;
-          player.vy = -player.size * 0.15; // プレイヤーに合わせたジャンプ高さ
+          player.vy = -player.size * 0.2; // ジャンプ高さを強化
         }
       }
     });
@@ -267,7 +267,7 @@
     canvas.addEventListener("touchstart", () => {
       if (!player.isJumping) {
         player.isJumping = true;
-        player.vy = -player.size * 0.15; // プレイヤーに合わせたジャンプ高さ
+        player.vy = -player.size * 0.2; // ジャンプ高さを強化
       }
     });
 
