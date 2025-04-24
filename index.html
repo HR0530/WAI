@@ -1,234 +1,279 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ジャンプアクションゲーム</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            font-family: sans-serif;
-        }
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ジャンプアクションゲーム</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      font-family: sans-serif;
+    }
 
-        #gameCanvas {
-            background-color: #f0f0f0;
-            display: block;
-        }
+    #gameCanvas {
+      background-color: #000;
+      display: block;
+    }
 
-        #startButton, #clearMessage {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            padding: 1rem 2rem;
-            font-size: 1.5rem;
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            display: none;
-            z-index: 10;
-        }
+    #startButton, #clearMessage {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      padding: 1rem 2rem;
+      font-size: 1.5rem;
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      display: none;
+      z-index: 10;
+    }
 
-        #startButton {
-            display: block;
-        }
+    #startButton {
+      display: block;
+    }
 
-        #timer {
-            position: absolute;
-            top: 10px;
-            right: 20px;
-            font-size: 1.2rem;
-            background-color: rgba(0, 0, 0, 0.5);
-            color: white;
-            padding: 0.4rem 0.8rem;
-            border-radius: 6px;
-            z-index: 10;
-            display: none;
-        }
-    </style>
+    #timer {
+      position: absolute;
+      top: 10px;
+      right: 20px;
+      font-size: 1.2rem;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      z-index: 10;
+      display: none;
+    }
+
+    #lives {
+      position: absolute;
+      top: 10px;
+      left: 20px;
+      font-size: 1.2rem;
+      background-color: rgba(0, 0, 0, 0.5);
+      color: white;
+      padding: 0.4rem 0.8rem;
+      border-radius: 6px;
+      z-index: 10;
+      display: none;
+    }
+  </style>
 </head>
 <body>
-    <canvas id="gameCanvas"></canvas>
-    <button id="startButton">スタート</button>
-    <div id="clearMessage">クリア！</div>
-    <div id="timer">3:00</div>
+  <canvas id="gameCanvas"></canvas>
+  <button id="startButton">スタート</button>
+  <div id="clearMessage">クリア！</div>
+  <div id="timer">3:00</div>
+  <div id="lives">♥♥♥</div>
 
-    <script>
-        const canvas = document.getElementById("gameCanvas");
-        const ctx = canvas.getContext("2d");
-        const startButton = document.getElementById("startButton");
-        const clearMessage = document.getElementById("clearMessage");
-        const timerDisplay = document.getElementById("timer");
+  <script>
+    const canvas = document.getElementById("gameCanvas");
+    const ctx = canvas.getContext("2d");
+    const startButton = document.getElementById("startButton");
+    const clearMessage = document.getElementById("clearMessage");
+    const timerDisplay = document.getElementById("timer");
+    const livesDisplay = document.getElementById("lives");
 
-        const player = {
-            x: 50,
-            y: 0,
-            size: 50,
-            vy: 0,
-            isJumping: false,
-        };
+    const playerImg = new Image();
+    playerImg.src = "img/player.jpg";
 
-        let obstacles = [];
-        let gameSpeed = 3;
-        let gameTime = 0;
-        let isRunning = false;
-        let startTime;
-        let lastSpeedChangeTime = 0;
-        let nextObstacleDelay = 1000;
+    const backgroundImg = new Image();
+    backgroundImg.src = "img/background.jpg";
 
-        function resizeCanvas() {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
-            player.y = canvas.height - player.size;
+    const player = {
+      x: 50,
+      y: 0,
+      size: 50,
+      vy: 0,
+      isJumping: false,
+    };
+
+    let obstacles = [];
+    let gameSpeed = 3;
+    let gameTime = 0;
+    let isRunning = false;
+    let startTime;
+    let lastSpeedChangeTime = 0;
+    let nextObstacleDelay = 1000;
+    let lives = 3;
+
+    function resizeCanvas() {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+      player.y = canvas.height - player.size;
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    function drawBackground() {
+      ctx.drawImage(backgroundImg, 0, 0, canvas.width, canvas.height);
+    }
+
+    function drawPlayer() {
+      ctx.drawImage(playerImg, player.x, player.y, player.size, player.size);
+    }
+
+    function drawObstacles() {
+      ctx.fillStyle = "red";
+      for (let obs of obstacles) {
+        ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
+      }
+    }
+
+    function updateObstacles() {
+      const now = Date.now();
+      obstacles.forEach(obs => obs.x -= gameSpeed);
+      obstacles = obstacles.filter(obs => obs.x + obs.width > 0);
+
+      if (!updateObstacles.lastTime) updateObstacles.lastTime = now;
+      if (now - updateObstacles.lastTime > nextObstacleDelay) {
+        const height = 15 + Math.random() * 35;
+        const width = 15 + Math.random() * 30;
+        obstacles.push({
+          x: canvas.width,
+          y: canvas.height - height,
+          width: width,
+          height: height
+        });
+        updateObstacles.lastTime = now;
+        nextObstacleDelay = 800 + Math.random() * 1200;
+      }
+    }
+
+    function updatePlayer() {
+      if (player.isJumping) {
+        player.vy += 0.5;
+        player.y += player.vy;
+        if (player.y >= canvas.height - player.size) {
+          player.y = canvas.height - player.size;
+          player.vy = 0;
+          player.isJumping = false;
         }
+      }
+    }
 
-        window.addEventListener("resize", resizeCanvas);
-        resizeCanvas();
-
-        function drawPlayer() {
-            ctx.fillStyle = "blue";
-            ctx.fillRect(player.x, player.y, player.size, player.size);
-        }
-
-        function drawObstacles() {
-            ctx.fillStyle = "red";
-            for (let obs of obstacles) {
-                ctx.fillRect(obs.x, obs.y, obs.width, obs.height);
-            }
-        }
-
-        function updateObstacles() {
-            const now = Date.now();
-            obstacles.forEach(obs => obs.x -= gameSpeed);
-            obstacles = obstacles.filter(obs => obs.x + obs.width > 0);
-
-            if (!updateObstacles.lastTime) updateObstacles.lastTime = now;
-            if (now - updateObstacles.lastTime > nextObstacleDelay) {
-                const height = 15 + Math.random() * 35;
-                const width = 20 + Math.random() * 10; // 障害物の幅を20から30の間でランダムに設定
-                obstacles.push({
-                    x: canvas.width,
-                    y: canvas.height - height,
-                    width: width,  // 変更: 障害物の幅をランダムに
-                    height: height
-                });
-                updateObstacles.lastTime = now;
-                nextObstacleDelay = 800 + Math.random() * 1200;
-            }
-        }
-
-        function updatePlayer() {
-            if (player.isJumping) {
-                player.vy += 0.5;  // 重力を適用
-                player.y += player.vy;
-                if (player.y >= canvas.height - player.size) {
-                    player.y = canvas.height - player.size;
-                    player.vy = 0;
-                    player.isJumping = false;
-                }
-            }
-        }
-
-        function checkCollision() {
-            for (let obs of obstacles) {
-                if (
-                    player.x < obs.x + obs.width &&
-                    player.x + player.size > obs.x &&
-                    player.y < obs.y + obs.height &&
-                    player.y + player.size > obs.y
-                ) {
-                    endGame();
-                }
-            }
-        }
-
-        function changeSpeed() {
-            const now = (Date.now() - startTime) / 1000;
-            if (now - lastSpeedChangeTime >= 30) {
-                lastSpeedChangeTime = now;
-                const speeds = [3, 5, 7];
-                gameSpeed = speeds[Math.floor(Math.random() * speeds.length)];
-            }
-        }
-
-        function updateTimerDisplay() {
-            const remaining = Math.max(0, 180 - Math.floor((Date.now() - startTime) / 1000));
-            const minutes = Math.floor(remaining / 60);
-            const seconds = remaining % 60;
-            timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
-        }
-
-        function draw() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-            drawPlayer();
-            drawObstacles();
-        }
-
-        function update() {
-            gameTime = (Date.now() - startTime) / 1000;
-            if (gameTime >= 180) return endGame(true);
-            changeSpeed();
-            updatePlayer();
-            updateObstacles();
-            checkCollision();
-            updateTimerDisplay();
-        }
-
-        function gameLoop() {
-            if (!isRunning) return;
-            update();
-            draw();
-            requestAnimationFrame(gameLoop);
-        }
-
-        function startGame() {
-            isRunning = true;
+    function checkCollision() {
+      for (let obs of obstacles) {
+        if (
+          player.x < obs.x + obs.width &&
+          player.x + player.size > obs.x &&
+          player.y < obs.y + obs.height &&
+          player.y + player.size > obs.y
+        ) {
+          lives--;
+          updateLivesDisplay();
+          if (lives <= 0) {
+            endGame();
+          } else {
             obstacles = [];
             player.y = canvas.height - player.size;
             player.vy = 0;
             player.isJumping = false;
-            gameSpeed = 3;
-            startTime = Date.now();
-            lastSpeedChangeTime = 0;
-            updateObstacles.lastTime = Date.now();
-            nextObstacleDelay = 1000;
-            startButton.style.display = "none";
-            clearMessage.style.display = "none";
-            timerDisplay.style.display = "block";
-            gameLoop();
+          }
+          return;
         }
+      }
+    }
 
-        function endGame(clear = false) {
-            isRunning = false;
-            timerDisplay.style.display = "none";
-            if (clear) {
-                clearMessage.style.display = "block";
-            } else {
-                alert("ゲームオーバー！");
-                startButton.style.display = "block";
-            }
+    function changeSpeed() {
+      const now = (Date.now() - startTime) / 1000;
+      if (now - lastSpeedChangeTime >= 30) {
+        lastSpeedChangeTime = now;
+        const speeds = [3, 5, 7];
+        gameSpeed = speeds[Math.floor(Math.random() * speeds.length)];
+      }
+    }
+
+    function updateTimerDisplay() {
+      const remaining = Math.max(0, 180 - Math.floor((Date.now() - startTime) / 1000));
+      const minutes = Math.floor(remaining / 60);
+      const seconds = remaining % 60;
+      timerDisplay.textContent = `${minutes}:${seconds.toString().padStart(2, '0')}`;
+    }
+
+    function updateLivesDisplay() {
+      livesDisplay.textContent = "♥".repeat(lives);
+    }
+
+    function draw() {
+      drawBackground();
+      drawPlayer();
+      drawObstacles();
+    }
+
+    function update() {
+      gameTime = (Date.now() - startTime) / 1000;
+      if (gameTime >= 180) return endGame(true);
+      changeSpeed();
+      updatePlayer();
+      updateObstacles();
+      checkCollision();
+      updateTimerDisplay();
+    }
+
+    function gameLoop() {
+      if (!isRunning) return;
+      update();
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      draw();
+      requestAnimationFrame(gameLoop);
+    }
+
+    function startGame() {
+      isRunning = true;
+      obstacles = [];
+      player.y = canvas.height - player.size;
+      player.vy = 0;
+      player.isJumping = false;
+      gameSpeed = 3;
+      startTime = Date.now();
+      lastSpeedChangeTime = 0;
+      updateObstacles.lastTime = Date.now();
+      nextObstacleDelay = 1000;
+      lives = 3;
+      updateLivesDisplay();
+      startButton.style.display = "none";
+      clearMessage.style.display = "none";
+      timerDisplay.style.display = "block";
+      livesDisplay.style.display = "block";
+      gameLoop();
+    }
+
+    function endGame(clear = false) {
+      isRunning = false;
+      timerDisplay.style.display = "none";
+      livesDisplay.style.display = "none";
+      if (clear) {
+        clearMessage.style.display = "block";
+      } else {
+        alert("ゲームオーバー！");
+        startButton.style.display = "block";
+      }
+    }
+
+    document.addEventListener("keydown", (e) => {
+      if (e.key === " " || e.key === "ArrowUp") {
+        if (!player.isJumping) {
+          player.isJumping = true;
+          player.vy = -14; // ← 高さを上げた
         }
+      }
+    });
 
-        // ジャンプ処理
-        document.addEventListener("keydown", (e) => {
-            if ((e.key === " " || e.key === "ArrowUp") && !player.isJumping) {
-                player.isJumping = true;
-                player.vy = -10;  // ジャンプ力
-            }
-        });
+    canvas.addEventListener("touchstart", () => {
+      if (!player.isJumping) {
+        player.isJumping = true;
+        player.vy = -14;
+      }
+    });
 
-        canvas.addEventListener("touchstart", () => {
-            if (!player.isJumping) {
-                player.isJumping = true;
-                player.vy = -10;
-            }
-        });
-
-        startButton.addEventListener("click", () => {
-            startGame();
-        });
-    </script>
+    startButton.addEventListener("click", () => {
+      startGame();
+    });
+  </script>
 </body>
 </html>
