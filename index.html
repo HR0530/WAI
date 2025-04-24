@@ -86,7 +86,7 @@
     const player = {
       x: 50,
       y: 0,
-      size: 50,
+      size: 80,
       vy: 0,
       isJumping: false,
     };
@@ -131,8 +131,8 @@
 
       if (!updateObstacles.lastTime) updateObstacles.lastTime = now;
       if (now - updateObstacles.lastTime > nextObstacleDelay) {
-        const height = 15 + Math.random() * 35;
-        const width = 15 + Math.random() * 30;
+        const height = 30 + Math.random() * 50;
+        const width = 30 + Math.random() * 50;
         obstacles.push({
           x: canvas.width,
           y: canvas.height - height,
@@ -259,7 +259,7 @@
       if (e.key === " " || e.key === "ArrowUp") {
         if (!player.isJumping) {
           player.isJumping = true;
-          player.vy = -14; // ← 高さを上げた
+          player.vy = -18; // ← 高さを上げた
         }
       }
     });
